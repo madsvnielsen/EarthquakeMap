@@ -1,10 +1,9 @@
-import { MapContainer, TileLayer, useMap, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import { EarthquakeMarkers } from './EarthquakeMarkers';
 import type { Earthquake } from '../types/earthquake';
 import { theme } from '../theme';
 import { useEffect} from 'react';
 //import faultData from '../data/faults.geojson?raw'
-import * as turf from '@turf/turf';
 import { AreaSelectionHandler } from './AreaSelectionHandler';
 
 type Props = {
