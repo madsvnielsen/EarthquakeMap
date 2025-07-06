@@ -23,7 +23,6 @@ export const EarthquakeMarkers = ({ quakes }: Props) => {
           time,
           url,
           alert,
-          tsunami,
           felt,
           mmi,
           cdi,
@@ -31,7 +30,6 @@ export const EarthquakeMarkers = ({ quakes }: Props) => {
           rms,
           dmin,
           magType,
-          type
         } = eq;
 
         const depth = eq.coords[2];

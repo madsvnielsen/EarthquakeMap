@@ -5,8 +5,6 @@ import {
   IconButton,
   Popover,
   Slider,
-  Stack,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
@@ -42,8 +40,6 @@ export const FilterToolbar = ({
   endDate,
   setStartDate,
   setEndDate,
-  setSelectedBounds,
-  areaSelectionEnabled,
   setAreaSelectionEnabled,
   areaFilter,
   loading,

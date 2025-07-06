@@ -22,7 +22,7 @@ type Props = {
 };
 
 
-const EarthquakeSidebar = ({ quakes, onSelectQuake, currentPage, totalPages, onNextPage, onPrevPage, loading, startDate, endDate, minMagnitude, offset, sortOption, setSortOption }: Props) => {
+const EarthquakeSidebar = ({ quakes, onSelectQuake, currentPage, totalPages, onNextPage, onPrevPage, sortOption, setSortOption }: Props) => {
     const [collapsed, setCollapsed] = useState(true);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
