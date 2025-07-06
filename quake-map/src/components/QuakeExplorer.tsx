@@ -63,7 +63,7 @@ const [initialLoading, setInitialLoading] = useState(true);
 
   return (
     <div className="flex w-full h-screen">
-      <div className="flex flex-col flex-grow relative">
+      <div className="flex flex-col flex-grow relative w-full">
         <TopBar
           filterSummary={`Showing earthquakes between ${format(startDate!, 'MMM d yyyy')} and ${format(endDate!, 'MMM d yyyy')} with magnitude ≥ ${minMagnitude}`}
         />
