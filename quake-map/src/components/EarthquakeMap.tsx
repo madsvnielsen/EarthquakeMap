@@ -3,7 +3,7 @@ import { EarthquakeMarkers } from './EarthquakeMarkers';
 import type { Earthquake } from '../types/earthquake';
 import { theme } from '../theme';
 import { useEffect} from 'react';
-import faultData from '../data/faults.geojson?raw'
+//import faultData from '../data/faults.geojson?raw'
 import * as turf from '@turf/turf';
 import { AreaSelectionHandler } from './AreaSelectionHandler';
 
@@ -38,7 +38,7 @@ export const EarthquakeMap = ({ quakes, selectedCoords,   areaSelectionEnabled, 
       />
        {selectedCoords && <FlyToEarthquake coords={selectedCoords} />}
        <EarthquakeMarkers quakes={quakes} />
-       <FaultLinesLayer />
+       {/* <FaultLinesLayer /> */}
       
     </MapContainer>
 
@@ -59,7 +59,7 @@ const FlyToEarthquake = ({ coords }: { coords: [number, number] }) => {
   return null;
 };
 
-
+/*
 const FaultLinesLayer = () => {
   let parsed;
   try {
@@ -82,11 +82,12 @@ const FaultLinesLayer = () => {
     <GeoJSON
       data={simplified}
       style={{
-        color: 'red',
-        weight: 1,
+        color: '#a12837',
+        weight: 0.5,
         opacity: 0.5,
       }}
     />
   );
 };
 
+*/
