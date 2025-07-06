@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState} from 'react';
 import { useMap, Marker, Rectangle } from 'react-leaflet';
 import type { LatLngExpression } from 'leaflet';
 
