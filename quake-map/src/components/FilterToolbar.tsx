@@ -57,9 +57,9 @@ export const FilterToolbar = ({
       <Box
         sx={{
           position: 'absolute',
-          bottom: 45,
+          bottom: 65,
           left: 16,
-          zIndex: 1000,
+          zIndex: 500,
           display: 'flex',
           alignItems: 'center',
           gap: 1.5,

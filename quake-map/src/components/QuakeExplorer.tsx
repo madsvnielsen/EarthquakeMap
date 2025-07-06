@@ -4,7 +4,7 @@ import { FilterToolbar } from "./FilterToolbar";
 import { EarthquakeMap } from "./EarthquakeMap";
 import EarthquakeSidebar from "./EarthquakeSidebar";
 import { AreaSelectionAlert } from "./AreaSelectionAlert";
-import { format, subDays } from "date-fns";
+import { subDays } from "date-fns";
 import { TopBar } from "./TopBar";
 import { SplashScreen } from "./SplashScreen";
 
@@ -27,15 +27,15 @@ const QuakeExplorer = () => {
 
   const { quakes, loading } = useEarthquakeData(minMagnitude, startDate, endDate, offset, sortOption, selectedBounds);
 
-const [initialLoading, setInitialLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
 
-    // Wait for first query to complete
-    useEffect(() => {
-      if (!loading && quakes.length > 0) {
-        setInitialLoading(false);
-      }
-    }, [loading, quakes]);
-      
+  // Wait for first query to complete
+  useEffect(() => {
+    if (!loading && quakes.length > 0) {
+      setInitialLoading(false);
+    }
+  }, [loading, quakes]);
+
   useEffect(() => {
     setOffset(1);
     setCurrentPage(1);
@@ -59,13 +59,15 @@ const [initialLoading, setInitialLoading] = useState(true);
     if (currentPage > 1) setCurrentPage(prev => prev - 1);
   };
 
-    if (initialLoading) return <SplashScreen />;
+  if (initialLoading) return <SplashScreen />;
 
   return (
     <div className="flex w-full h-screen">
       <div className="flex flex-col flex-grow relative w-full">
         <TopBar
-          filterSummary={`Showing earthquakes between ${format(startDate!, 'MMM d yyyy')} and ${format(endDate!, 'MMM d yyyy')} with magnitude ≥ ${minMagnitude}`}
+          startDate={startDate!}
+          endDate={endDate!}
+          minMagnitude={minMagnitude}
         />
         <FilterToolbar
           sliderValue={sliderValue}
