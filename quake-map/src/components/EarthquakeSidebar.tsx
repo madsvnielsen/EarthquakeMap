@@ -39,15 +39,15 @@ const EarthquakeSidebar = ({ quakes, onSelectQuake, currentPage, totalPages, onN
 
     return (
         <div
-            className={`absolute top-0 right-0 transition-all duration-300 ease-in-out text-white z-[500]  h-full ${collapsed ? 'w-12 bg-transparent ' : 'w-80 bg-primary shadow-lg shadow-black/30 max-h-full'
+            className={`fixed top-0 right-0 transition-all duration-300 ease-in-out text-white z-[500]  h-full ${collapsed ? 'w-12 bg-transparent ' : 'w-80 bg-primary shadow-lg shadow-black/30 max-h-full'
                 }`}
         >
             
-            {collapsed && <Typography className="absolute right-[68px] top-6 z-10 text-primary w-28" fontSize={15} fontWeight={500}>Earthquake List</Typography>}
+            {collapsed && <Typography className="fixed right-[68px] top-[46px] z-10 text-primary w-28" fontSize={15} fontWeight={500}>Earthquake List</Typography>}
             {/* Toggle Button */}
             <button
                 onClick={() => setCollapsed(!collapsed)}
-                className={`absolute -left-${collapsed ? "4" : "10"} top-4 z-10 bg-primary border border-slate-700 rounded-r-md p-1 hover:bg-slate-700"`}
+                className={`fixed ${collapsed ? "right-[25px]" : "right-[325px]"} top-[40px] z-10 bg-primary border border-slate-700 rounded-r-md p-1 hover:bg-slate-700"`}
             >
                 {collapsed ?  <ChevronLeft /> : <ChevronRight />}
             </button>
