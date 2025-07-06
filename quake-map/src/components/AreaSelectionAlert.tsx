@@ -9,7 +9,7 @@ export const AreaSelectionAlert = ({ onCancel }: Props) => {
     <Box
       sx={{
         position: 'absolute',
-        top: 16,
+        top: 42,
         left: '50%',
         transform: 'translateX(-50%)',
         bgcolor: 'background.paper',

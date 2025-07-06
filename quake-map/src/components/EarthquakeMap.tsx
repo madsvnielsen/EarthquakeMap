@@ -21,8 +21,8 @@ export const EarthquakeMap = ({ quakes, selectedCoords,   areaSelectionEnabled, 
   return (
 
     <MapContainer
-      center={[36.2048, 138.2529]}
-      zoom={2}
+      center={[0, 0]}
+      zoom={3}
       scrollWheelZoom={true}
       style={{backgroundColor: theme.palette.background.default, width: "100%", height: "100%", zIndex: 0}}
     > <AreaSelectionHandler
