@@ -17,14 +17,15 @@ import QueryStatsRoundedIcon from '@mui/icons-material/QueryStatsRounded';
 import PlaceRoundedIcon from '@mui/icons-material/PlaceRounded';
 import { useState } from 'react';
 import { Constants } from '../utils/Constants';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 
 type Props = {
-  startDate: Date;
-  endDate: Date;
+  startDate: Date | null;
+  endDate: Date | null;
   minMagnitude: number;
   resultCount: number;
   areaFilter: boolean;
+  didReachLimit?: boolean;
 };
 
 export const TopBar = ({
@@ -33,11 +34,18 @@ export const TopBar = ({
   minMagnitude,
   resultCount,
   areaFilter,
+  didReachLimit,
 }: Props) => {
   const [anchor, setAnchor] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const resultLabel = resultCount > 0 && resultCount % 100 === 0 ? `${resultCount}+` : `${resultCount}`;
+  const resultLabel = didReachLimit ? `${resultCount}+` : `${resultCount}`;
+  const hasValidRange = !!startDate && !!endDate && isValid(startDate) && isValid(endDate);
+  const dateLabel = hasValidRange
+    ? isMobile
+      ? `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`
+      : `${format(startDate, 'MMM d')} to ${format(endDate, 'MMM d, yyyy')}`
+    : 'Choose a valid date range';
 
   return (
     <AppBar
@@ -151,7 +159,7 @@ export const TopBar = ({
           />
           {isMobile ? (
             <Chip
-              label={`${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`}
+              label={dateLabel}
               size="small"
               sx={{
                 bgcolor: 'rgba(159, 179, 200, 0.12)',
@@ -162,7 +170,7 @@ export const TopBar = ({
             />
           ) : (
             <Chip
-              label={`${format(startDate, 'MMM d')} to ${format(endDate, 'MMM d, yyyy')}`}
+              label={dateLabel}
               size="small"
               sx={{ bgcolor: 'rgba(159, 179, 200, 0.12)', color: 'text.primary', height: 24, flexShrink: 0 }}
             />

@@ -5,34 +5,37 @@ import type { Earthquake } from '../types/earthquake';
 type SortOption = 'time-desc' | 'time-asc' | 'magnitude-desc' | 'magnitude-asc';
 type Bounds = [[number, number], [number, number]];
 
+const PAGE_SIZE = 100;
+const MAX_RESULTS = 1000;
+
 export const useEarthquakeData = (
   minMagnitude: number,
   startDate: Date | null,
   endDate: Date | null,
-  offset: number,
   sortOption: SortOption,
-  bounds?: Bounds | null
+  bounds?: Bounds | null,
 ) => {
   const [quakes, setQuakes] = useState<Earthquake[]>([]);
   const [loading, setLoading] = useState(false);
+  const [didReachLimit, setDidReachLimit] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
-      if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        console.warn('Invalid or missing start/end date');
+      if (!startDate || !endDate || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
         return;
       }
+
       if (endDate < startDate) {
-        console.warn('End date is earlier than start date');
         return;
       }
 
       setLoading(true);
+      setDidReachLimit(false);
 
-      // 📆 Format dates
       const startTime = format(startDate, 'yyyy-MM-dd');
       const endTime = format(addDays(endDate, 1), 'yyyy-MM-dd');
-      const calculatedOffset = (offset - 1) * 100 + 1;
 
       const orderMap: Record<SortOption, string> = {
         'time-desc': 'time',
@@ -41,25 +44,46 @@ export const useEarthquakeData = (
         'magnitude-asc': 'magnitude-asc',
       };
 
-      // 🌐 Build API URL
-      let url = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${startTime}&endtime=${endTime}&minmagnitude=${minMagnitude}&limit=100&offset=${calculatedOffset}&orderby=${orderMap[sortOption]}`;
+      const baseUrl = new URL('https://earthquake.usgs.gov/fdsnws/event/1/query');
+      baseUrl.searchParams.set('format', 'geojson');
+      baseUrl.searchParams.set('starttime', startTime);
+      baseUrl.searchParams.set('endtime', endTime);
+      baseUrl.searchParams.set('minmagnitude', String(minMagnitude));
+      baseUrl.searchParams.set('orderby', orderMap[sortOption]);
+      baseUrl.searchParams.set('limit', String(PAGE_SIZE));
 
       if (bounds) {
         const [[minLat, minLng], [maxLat, maxLng]] = bounds;
-        url += `&minlatitude=${minLat}&maxlatitude=${maxLat}&minlongitude=${minLng}&maxlongitude=${maxLng}`;
+        baseUrl.searchParams.set('minlatitude', String(minLat));
+        baseUrl.searchParams.set('maxlatitude', String(maxLat));
+        baseUrl.searchParams.set('minlongitude', String(minLng));
+        baseUrl.searchParams.set('maxlongitude', String(maxLng));
       }
 
       try {
-        const res = await fetch(url);
-        const data = await res.json();
+        const allFeatures: any[] = [];
 
-        if (!data?.features?.length) {
-          console.info('No data returned for this query.');
-          setQuakes([]);
+        for (let offset = 1; offset <= MAX_RESULTS; offset += PAGE_SIZE) {
+          const pageUrl = new URL(baseUrl);
+          pageUrl.searchParams.set('offset', String(offset));
+
+          const res = await fetch(pageUrl.toString());
+          const data = await res.json();
+          const features = data?.features ?? [];
+
+          allFeatures.push(...features);
+
+          if (features.length < PAGE_SIZE) {
+            break;
+          }
+        }
+
+        if (cancelled) {
           return;
         }
 
-        const parsed: Earthquake[] = data.features.map((feature: any) => {
+        const slicedFeatures = allFeatures.slice(0, MAX_RESULTS);
+        const parsed: Earthquake[] = slicedFeatures.map((feature: any) => {
           const { id, properties, geometry } = feature;
           const [lng, lat, depth = 0] = geometry.coordinates;
 
@@ -71,7 +95,6 @@ export const useEarthquakeData = (
             url: properties.url,
             time: properties.time,
             place: properties.place,
-
             alert: properties.alert ?? undefined,
             tsunami: properties.tsunami ?? undefined,
             felt: properties.felt ?? undefined,
@@ -85,16 +108,27 @@ export const useEarthquakeData = (
           };
         });
 
-        setQuakes(prev => (offset === 1 ? parsed : [...prev, ...parsed]));
+        setQuakes(parsed);
+        setDidReachLimit(allFeatures.length >= MAX_RESULTS);
       } catch (error) {
-        console.error('Error fetching earthquake data:', error);
+        if (!cancelled) {
+          console.error('Error fetching earthquake data:', error);
+          setQuakes([]);
+          setDidReachLimit(false);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
-  }, [minMagnitude, startDate, endDate, offset, sortOption, bounds]);
 
-  return { quakes, loading };
+    return () => {
+      cancelled = true;
+    };
+  }, [minMagnitude, startDate, endDate, sortOption, bounds]);
+
+  return { quakes, loading, didReachLimit };
 };

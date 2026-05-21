@@ -1,17 +1,16 @@
-import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { Earthquake } from '../types/earthquake';
 import {
-  AccessTime,
   CalendarMonthRounded,
   ClearRounded,
   FilterAltRounded,
   GridViewRounded,
+  InsightsRounded,
   LayersRounded,
   MyLocationRounded,
   PlaceRounded,
+  ScheduleRounded,
   SortRounded,
-  TrendingDown,
-  TrendingUp,
   ViewListRounded,
 } from '@mui/icons-material';
 import {
@@ -20,10 +19,6 @@ import {
   Chip,
   Divider,
   IconButton,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
   Slider,
   Stack,
   Tooltip,
@@ -35,13 +30,15 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { subDays, subYears } from 'date-fns';
 import { EarthquakeDetailIcons } from './EarthquakeDetailIcons';
+import { EarthquakeInsights } from './EarthquakeInsights';
 import { getColorForMagnitude } from '../utils/getColorForMagnetude';
 
 type SortOption = 'time-desc' | 'time-asc' | 'magnitude-desc' | 'magnitude-asc';
-type ActivePanel = 'filters' | 'list' | null;
+type ActivePanel = 'filters' | 'list' | 'insights' | null;
 
 type Props = {
   quakes: Earthquake[];
+  allQuakes: Earthquake[];
   onSelectQuake: (coords: [number, number]) => void;
   currentPage: number;
   totalPages: number;
@@ -64,10 +61,14 @@ type Props = {
   setActivePanel: (panel: ActivePanel) => void;
   sortOption: SortOption;
   setSortOption: (option: SortOption) => void;
+  onResetFilters: () => void;
+  hasPendingChanges: boolean;
+  canApply: boolean;
 };
 
 const EarthquakeSidebar = ({
   quakes,
+  allQuakes,
   onSelectQuake,
   currentPage,
   totalPages,
@@ -90,36 +91,24 @@ const EarthquakeSidebar = ({
   setActivePanel,
   sortOption,
   setSortOption,
+  onResetFilters,
+  hasPendingChanges,
+  canApply,
 }: Props) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const sortOptionLabel = useMemo(
-    () =>
-      ({
-        'time-desc': 'Newest first',
-        'time-asc': 'Oldest first',
-        'magnitude-desc': 'Strongest first',
-        'magnitude-asc': 'Weakest first',
-      })[sortOption],
-    [sortOption],
-  );
+  const areaFilter = selectedBounds !== null;
 
   const togglePanel = (panel: Exclude<ActivePanel, null>) => {
     setActivePanel(activePanel === panel ? null : panel);
   };
 
-  const clearFilters = () => {
-    setSliderValue(0);
-    setMinMagnitude(0);
-    setStartDate(subDays(new Date(), 1));
-    setEndDate(new Date());
-    setSelectedBounds(null);
-    setAreaSelectionEnabled(false);
-  };
-
-  const areaFilter = selectedBounds !== null;
+  const sortLabel = {
+    'time-desc': 'Newest first',
+    'time-asc': 'Oldest first',
+    'magnitude-desc': 'Strongest first',
+    'magnitude-asc': 'Weakest first',
+  }[sortOption];
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -179,6 +168,22 @@ const EarthquakeSidebar = ({
               <ViewListRounded fontSize="small" />
             </IconButton>
           </Tooltip>
+
+          <Tooltip title="Insights" placement="left" arrow>
+            <IconButton
+              onClick={() => togglePanel('insights')}
+              className="glass-panel"
+              sx={{
+                width: 46,
+                height: 46,
+                color: activePanel === 'insights' ? 'primary.light' : 'text.primary',
+                bgcolor:
+                  activePanel === 'insights' ? 'rgba(255, 138, 91, 0.12)' : 'rgba(9, 21, 31, 0.78)',
+              }}
+            >
+              <InsightsRounded fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Stack>
 
         <Box
@@ -207,15 +212,25 @@ const EarthquakeSidebar = ({
             }}
           >
             <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  {activePanel === 'filters' ? 'Filters' : 'Earthquake list'}
-                </Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                {activePanel === 'filters'
+                  ? 'Filters'
+                  : activePanel === 'insights'
+                    ? 'Insights'
+                    : 'Earthquake list'}
+              </Typography>
               <Typography variant="caption" color="text.secondary">
                 {activePanel === 'filters'
-                  ? 'Refine intensity, date range, and map area.'
-                  : isMobile
-                    ? `${quakes.length} events in view`
-                    : `${quakes.length} events on this page`}
+                  ? hasPendingChanges
+                    ? canApply
+                      ? 'Changes are ready to apply on the map.'
+                      : 'Finish the date range before applying.'
+                    : 'Refine intensity, date range, sort, and map area.'
+                  : activePanel === 'insights'
+                    ? 'Quick patterns from the current filtered dataset.'
+                    : isMobile
+                      ? `${quakes.length} events in view`
+                      : `${quakes.length} events on this page`}
               </Typography>
             </Box>
             <IconButton size="small" onClick={() => setActivePanel(null)} sx={{ color: 'text.secondary' }}>
@@ -226,14 +241,7 @@ const EarthquakeSidebar = ({
           {activePanel === 'filters' ? (
             <Box sx={{ px: 1.75, py: 1.5, overflowY: 'auto' }}>
               <Stack spacing={1.4}>
-                <Box
-                  sx={{
-                    p: 1.4,
-                    borderRadius: '8px',
-                    bgcolor: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(169, 192, 215, 0.08)',
-                  }}
-                >
+                <FilterCard>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.5}>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <LayersRounded fontSize="small" color="primary" />
@@ -249,28 +257,23 @@ const EarthquakeSidebar = ({
                     />
                   </Stack>
                   <Typography variant="caption" color="text.secondary">
-                    Currently showing earthquakes at magnitude {minMagnitude.toFixed(1)} and above.
+                    Draft filter is set to magnitude {minMagnitude.toFixed(1)} and above.
                   </Typography>
                   <Slider
                     value={sliderValue}
-                    onChange={(_, value) => setSliderValue(value as number)}
-                    onChangeCommitted={(_, value) => setMinMagnitude(value as number)}
+                    onChange={(_, value) => {
+                      setSliderValue(value as number);
+                      setMinMagnitude(value as number);
+                    }}
                     min={0}
                     max={10}
                     step={0.1}
                     valueLabelDisplay="auto"
                     sx={{ color: 'primary.main' }}
                   />
-                </Box>
+                </FilterCard>
 
-                <Box
-                  sx={{
-                    p: 1.4,
-                    borderRadius: '8px',
-                    bgcolor: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(169, 192, 215, 0.08)',
-                  }}
-                >
+                <FilterCard>
                   <Stack direction="row" spacing={1} alignItems="center" mb={1.5}>
                     <CalendarMonthRounded fontSize="small" color="secondary" />
                     <Typography variant="subtitle2">Date range</Typography>
@@ -314,16 +317,51 @@ const EarthquakeSidebar = ({
                       }}
                     />
                   </Stack>
-                </Box>
+                </FilterCard>
 
-                <Box
-                  sx={{
-                    p: 1.4,
-                    borderRadius: '8px',
-                    bgcolor: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(169, 192, 215, 0.08)',
-                  }}
-                >
+                <FilterCard>
+                  <Stack direction="row" spacing={1} alignItems="center" mb={1.25}>
+                    <SortRounded fontSize="small" color="secondary" />
+                    <Typography variant="subtitle2">Sorting</Typography>
+                  </Stack>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.25 }}>
+                    Current draft: {sortLabel}
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <Button
+                      size="small"
+                      variant={sortOption === 'time-desc' ? 'contained' : 'outlined'}
+                      onClick={() => setSortOption('time-desc')}
+                      startIcon={<ScheduleRounded />}
+                    >
+                      Newest
+                    </Button>
+                    <Button
+                      size="small"
+                      variant={sortOption === 'time-asc' ? 'contained' : 'outlined'}
+                      onClick={() => setSortOption('time-asc')}
+                      startIcon={<ScheduleRounded />}
+                    >
+                      Oldest
+                    </Button>
+                    <Button
+                      size="small"
+                      variant={sortOption === 'magnitude-desc' ? 'contained' : 'outlined'}
+                      onClick={() => setSortOption('magnitude-desc')}
+                    >
+                      Strongest
+                    </Button>
+                    <Button
+                      size="small"
+                      variant={sortOption === 'magnitude-asc' ? 'contained' : 'outlined'}
+                      onClick={() => setSortOption('magnitude-asc')}
+                    >
+                      Weakest
+                    </Button>
+                  </Stack>
+                </FilterCard>
+
+                <FilterCard>
                   <Stack direction="row" spacing={1} alignItems="center" mb={1.25}>
                     <PlaceRounded fontSize="small" color="secondary" />
                     <Typography variant="subtitle2">Map area</Typography>
@@ -354,17 +392,21 @@ const EarthquakeSidebar = ({
                       </Button>
                     )}
                   </Stack>
-                </Box>
+                </FilterCard>
 
                 <Button
                   variant="outlined"
                   color="inherit"
-                  onClick={clearFilters}
+                  onClick={onResetFilters}
                   sx={{ alignSelf: 'flex-start' }}
                 >
-                  Reset all filters
+                  Reset draft filters
                 </Button>
               </Stack>
+            </Box>
+          ) : activePanel === 'insights' ? (
+            <Box sx={{ px: 1.75, py: 1.5, overflowY: 'auto' }}>
+              <EarthquakeInsights quakes={allQuakes} startDate={startDate} endDate={endDate} />
             </Box>
           ) : (
             <>
@@ -381,40 +423,15 @@ const EarthquakeSidebar = ({
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Chip
                     size="small"
-                    label={sortOptionLabel}
+                    label={`${quakes.length} on this page`}
                     sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', color: 'text.primary' }}
                   />
-                  {loading && <Typography variant="caption" color="secondary.main">Updating...</Typography>}
+                  {loading && (
+                    <Typography variant="caption" color="secondary.main">
+                      Loading earthquake data...
+                    </Typography>
+                  )}
                 </Stack>
-                <IconButton size="small" onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ color: 'text.secondary' }}>
-                  <SortRounded fontSize="small" />
-                </IconButton>
-                <Menu
-                  anchorEl={anchorEl}
-                  open={Boolean(anchorEl)}
-                  onClose={() => setAnchorEl(null)}
-                  PaperProps={{
-                    className: 'glass-panel',
-                    sx: { borderRadius: '18px' },
-                  }}
-                >
-                  <MenuItem onClick={() => { setSortOption('time-desc'); setAnchorEl(null); }}>
-                    <ListItemIcon><AccessTime fontSize="small" /></ListItemIcon>
-                    <ListItemText>Newest first</ListItemText>
-                  </MenuItem>
-                  <MenuItem onClick={() => { setSortOption('time-asc'); setAnchorEl(null); }}>
-                    <ListItemIcon><AccessTime fontSize="small" /></ListItemIcon>
-                    <ListItemText>Oldest first</ListItemText>
-                  </MenuItem>
-                  <MenuItem onClick={() => { setSortOption('magnitude-desc'); setAnchorEl(null); }}>
-                    <ListItemIcon><TrendingDown fontSize="small" /></ListItemIcon>
-                    <ListItemText>Strongest first</ListItemText>
-                  </MenuItem>
-                  <MenuItem onClick={() => { setSortOption('magnitude-asc'); setAnchorEl(null); }}>
-                    <ListItemIcon><TrendingUp fontSize="small" /></ListItemIcon>
-                    <ListItemText>Weakest first</ListItemText>
-                  </MenuItem>
-                </Menu>
               </Box>
 
               <Box sx={{ px: 1.1, py: 0.9, overflowY: 'auto', flex: 1 }}>
@@ -528,8 +545,14 @@ const EarthquakeSidebar = ({
                 >
                   Page {currentPage} of {Math.max(totalPages, 1)}
                 </Typography>
-                <Button onClick={onNextPage} variant="contained" color="primary" size={isMobile ? 'small' : 'medium'}>
-                  {currentPage < totalPages ? 'Next' : 'More'}
+                <Button
+                  onClick={onNextPage}
+                  variant="contained"
+                  color="primary"
+                  size={isMobile ? 'small' : 'medium'}
+                  disabled={currentPage >= totalPages}
+                >
+                  Next
                 </Button>
               </Box>
             </>
@@ -539,5 +562,18 @@ const EarthquakeSidebar = ({
     </LocalizationProvider>
   );
 };
+
+const FilterCard = ({ children }: { children: ReactNode }) => (
+  <Box
+    sx={{
+      p: 1.4,
+      borderRadius: '8px',
+      bgcolor: 'rgba(255, 255, 255, 0.03)',
+      border: '1px solid rgba(169, 192, 215, 0.08)',
+    }}
+  >
+    {children}
+  </Box>
+);
 
 export default EarthquakeSidebar;
