@@ -8,7 +8,7 @@ import { TopBar } from './TopBar';
 import { SplashScreen } from './SplashScreen';
 import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 
-type SortOption = 'magnitude-desc' | 'magnitude-asc' | 'time-desc' | 'time-asc';
+type SortOption = 'magnitude-desc' | 'magnitude-asc' | 'time-desc' | 'time-asc' | null;
 type ActivePanel = 'filters' | 'list' | 'insights' | null;
 type Bounds = [[number, number], [number, number]] | null;
 
@@ -28,7 +28,7 @@ const createInitialFilters = (): FilterState => {
     sliderValue: 0,
     startDate: subDays(now, 1),
     endDate: now,
-    sortOption: 'magnitude-desc',
+    sortOption: null,
     selectedBounds: null,
   };
 };

@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react';
 import { addDays, format } from 'date-fns';
 import type { Earthquake } from '../types/earthquake';
 
-type SortOption = 'time-desc' | 'time-asc' | 'magnitude-desc' | 'magnitude-asc';
+type SortOption = 'time-desc' | 'time-asc' | 'magnitude-desc' | 'magnitude-asc' | null;
 type Bounds = [[number, number], [number, number]];
 
-const PAGE_SIZE = 100;
-const MAX_RESULTS = 1000;
+const MAX_RESULTS = 10000;
 
 export const useEarthquakeData = (
   minMagnitude: number,
@@ -37,7 +36,7 @@ export const useEarthquakeData = (
       const startTime = format(startDate, 'yyyy-MM-dd');
       const endTime = format(addDays(endDate, 1), 'yyyy-MM-dd');
 
-      const orderMap: Record<SortOption, string> = {
+      const orderMap: Record<Exclude<SortOption, null>, string> = {
         'time-desc': 'time',
         'time-asc': 'time-asc',
         'magnitude-desc': 'magnitude',
@@ -49,8 +48,10 @@ export const useEarthquakeData = (
       baseUrl.searchParams.set('starttime', startTime);
       baseUrl.searchParams.set('endtime', endTime);
       baseUrl.searchParams.set('minmagnitude', String(minMagnitude));
-      baseUrl.searchParams.set('orderby', orderMap[sortOption]);
-      baseUrl.searchParams.set('limit', String(PAGE_SIZE));
+      if (sortOption) {
+        baseUrl.searchParams.set('orderby', orderMap[sortOption]);
+      }
+      baseUrl.searchParams.set('limit', String(MAX_RESULTS));
 
       if (bounds) {
         const [[minLat, minLng], [maxLat, maxLng]] = bounds;
@@ -61,22 +62,9 @@ export const useEarthquakeData = (
       }
 
       try {
-        const allFeatures: any[] = [];
-
-        for (let offset = 1; offset <= MAX_RESULTS; offset += PAGE_SIZE) {
-          const pageUrl = new URL(baseUrl);
-          pageUrl.searchParams.set('offset', String(offset));
-
-          const res = await fetch(pageUrl.toString());
-          const data = await res.json();
-          const features = data?.features ?? [];
-
-          allFeatures.push(...features);
-
-          if (features.length < PAGE_SIZE) {
-            break;
-          }
-        }
+        const res = await fetch(baseUrl.toString());
+        const data = await res.json();
+        const allFeatures = data?.features ?? [];
 
         if (cancelled) {
           return;

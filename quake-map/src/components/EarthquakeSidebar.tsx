@@ -33,7 +33,7 @@ import { EarthquakeDetailIcons } from './EarthquakeDetailIcons';
 import { EarthquakeInsights } from './EarthquakeInsights';
 import { getColorForMagnitude } from '../utils/getColorForMagnetude';
 
-type SortOption = 'time-desc' | 'time-asc' | 'magnitude-desc' | 'magnitude-asc';
+type SortOption = 'time-desc' | 'time-asc' | 'magnitude-desc' | 'magnitude-asc' | null;
 type ActivePanel = 'filters' | 'list' | 'insights' | null;
 
 type Props = {
@@ -103,12 +103,15 @@ const EarthquakeSidebar = ({
     setActivePanel(activePanel === panel ? null : panel);
   };
 
-  const sortLabel = {
-    'time-desc': 'Newest first',
-    'time-asc': 'Oldest first',
-    'magnitude-desc': 'Strongest first',
-    'magnitude-asc': 'Weakest first',
-  }[sortOption];
+  const sortLabel =
+    sortOption === null
+      ? 'Default'
+      : {
+          'time-desc': 'Newest first',
+          'time-asc': 'Oldest first',
+          'magnitude-desc': 'Strongest first',
+          'magnitude-asc': 'Weakest first',
+        }[sortOption];
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -328,6 +331,13 @@ const EarthquakeSidebar = ({
                     Current draft: {sortLabel}
                   </Typography>
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <Button
+                      size="small"
+                      variant={sortOption === null ? 'contained' : 'outlined'}
+                      onClick={() => setSortOption(null)}
+                    >
+                      Default
+                    </Button>
                     <Button
                       size="small"
                       variant={sortOption === 'time-desc' ? 'contained' : 'outlined'}

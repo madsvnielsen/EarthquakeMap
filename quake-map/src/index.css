@@ -122,22 +122,58 @@ select {
   height: var(--marker-size);
   background: var(--marker-color);
   border: 1px solid rgba(255, 244, 220, 0.95);
-  box-shadow: 0 0 0 1px rgba(5, 12, 18, 0.3), 0 0 22px color-mix(in srgb, var(--marker-color) 38%, transparent);
+  box-shadow: 0 0 0 1px rgba(5, 12, 18, 0.3), 0 0 10px color-mix(in srgb, var(--marker-color) 22%, transparent);
 }
 
 .quake-marker__ring {
   width: calc(var(--marker-size) + 6px);
   height: calc(var(--marker-size) + 6px);
   border: 1px solid color-mix(in srgb, var(--marker-color) 45%, white 12%);
-  opacity: 0.7;
+  opacity: 0.45;
 }
 
 .quake-marker__pulse {
   width: calc(var(--marker-size) + 12px);
   height: calc(var(--marker-size) + 12px);
-  background: color-mix(in srgb, var(--marker-color) 34%, transparent);
-  animation: quakePulse 2.6s ease-out infinite;
+  background: color-mix(in srgb, var(--marker-color) 20%, transparent);
+  animation: quakePulse 3s ease-out infinite;
   animation-delay: var(--marker-delay);
+}
+
+.quake-cluster {
+  position: relative;
+  width: var(--cluster-size);
+  height: var(--cluster-size);
+  display: block;
+}
+
+.quake-cluster__ring,
+.quake-cluster__core {
+  position: absolute;
+  inset: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+}
+
+.quake-cluster__ring {
+  width: calc(var(--cluster-size) + 8px);
+  height: calc(var(--cluster-size) + 8px);
+  background: color-mix(in srgb, var(--cluster-color) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cluster-color) 34%, white 10%);
+}
+
+.quake-cluster__core {
+  width: var(--cluster-size);
+  height: var(--cluster-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--cluster-color) 82%, #0b1821 18%);
+  color: #f4f7fb;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 244, 220, 0.78);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
 }
 
 @keyframes quakePulse {

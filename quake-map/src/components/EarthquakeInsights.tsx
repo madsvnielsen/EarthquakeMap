@@ -2,18 +2,11 @@ import type { ReactNode } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 import type { Earthquake } from '../types/earthquake';
 import {
-  addDays,
-  addMonths,
-  addWeeks,
-  addYears,
   differenceInCalendarDays,
   endOfDay,
   format,
   isValid,
   startOfDay,
-  startOfMonth,
-  startOfWeek,
-  startOfYear,
 } from 'date-fns';
 
 type Props = {
@@ -63,8 +56,8 @@ export const EarthquakeInsights = ({ quakes, startDate, endDate }: Props) => {
       </InsightBlock>
 
       <InsightBlock
-        title={`Quakes per ${timeSeries.label}`}
-        subtitle={`Activity grouped by ${timeSeries.label} for the current region and selected period.`}
+        title="Quakes over time"
+        subtitle={`Activity grouped into up to 20 time buckets for the current region and selected period.`}
       >
         <TimeSeriesChart points={timeSeries.points} emptyLabel="Choose a valid date range to see activity." />
       </InsightBlock>
@@ -219,30 +212,66 @@ const TimeSeriesChart = ({
             >
               <Box
                 sx={{
+                  position: 'relative',
                   width: '100%',
                   height: `${Math.max(height, point.count > 0 ? 6 : 0)}%`,
                   bgcolor: 'secondary.main',
                   borderRadius: '4px 4px 0 0',
                 }}
                 title={`${point.label}: ${point.count}`}
-              />
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    fontSize: '0.62rem',
+                    lineHeight: 1,
+                    color: '#08131c',
+                    fontWeight: 700,
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{
+                      writingMode: 'vertical-rl',
+                      textOrientation: 'mixed',
+                      transform: 'rotate(180deg)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {point.count}
+                  </Box>
+                </Typography>
+              </Box>
             </Box>
             <Typography
               variant="caption"
               color="text.secondary"
               sx={{
-                mt: 0.5,
-                display: 'block',
-                textAlign: 'center',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                mt: 0.75,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'flex-start',
+                minHeight: 52,
+                fontSize: '0.62rem',
+                lineHeight: 1,
               }}
             >
-              {point.label}
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block', textAlign: 'center' }}>
-              {point.count}
+              <Box
+                component="span"
+                sx={{
+                  writingMode: 'vertical-rl',
+                  textOrientation: 'mixed',
+                  transform: 'rotate(180deg)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {point.label}
+              </Box>
             </Typography>
           </Box>
         );
@@ -304,144 +333,70 @@ const buildAdaptiveTimeSeries = (
   endDate: Date | null,
 ): TimeSeries => {
   if (!startDate || !endDate || !isValid(startDate) || !isValid(endDate)) {
-    return { label: 'period', points: [] };
+    return { label: 'time', points: [] };
   }
 
   const from = startOfDay(startDate);
   const to = endOfDay(endDate);
 
   if (from > to) {
-    return { label: 'period', points: [] };
+    return { label: 'time', points: [] };
   }
 
   const daySpan = differenceInCalendarDays(to, from) + 1;
-
-  if (daySpan <= 7) {
-    return {
-      label: 'day',
-      points: buildTimeBuckets(quakes, from, to, 'day'),
-    };
-  }
-
-  if (daySpan <= 31) {
-    return {
-      label: 'week',
-      points: buildTimeBuckets(quakes, from, to, 'week'),
-    };
-  }
-
-  if (daySpan <= 365) {
-    return {
-      label: 'month',
-      points: buildTimeBuckets(quakes, from, to, 'month'),
-    };
-  }
-
-  if (daySpan <= 3650) {
-    return {
-      label: 'year',
-      points: buildTimeBuckets(quakes, from, to, 'year'),
-    };
-  }
+  const bucketCount = Math.min(20, Math.max(1, daySpan));
 
   return {
-    label: 'decade',
-    points: buildTimeBuckets(quakes, from, to, 'decade'),
+    label: 'time',
+    points: buildTimeBuckets(quakes, from, to, bucketCount),
   };
 };
-
-type BucketMode = 'day' | 'week' | 'month' | 'year' | 'decade';
 
 const buildTimeBuckets = (
   quakes: Earthquake[],
   from: Date,
   to: Date,
-  mode: BucketMode,
+  bucketCount: number,
 ): SeriesPoint[] => {
   const points: SeriesPoint[] = [];
-  let cursor = alignCursor(from, mode);
+  const totalMs = to.getTime() - from.getTime() + 1;
 
-  while (cursor <= to) {
-    const bucketStart = cursor;
-    const nextStart = getNextBucketStart(bucketStart, mode);
-    const bucketEnd = new Date(Math.min(nextStart.getTime() - 1, to.getTime()));
+  for (let index = 0; index < bucketCount; index += 1) {
+    const bucketStartMs = from.getTime() + Math.floor((totalMs * index) / bucketCount);
+    const nextStartMs =
+      index === bucketCount - 1
+        ? to.getTime() + 1
+        : from.getTime() + Math.floor((totalMs * (index + 1)) / bucketCount);
+    const bucketStart = new Date(bucketStartMs);
+    const bucketEnd = new Date(Math.min(nextStartMs - 1, to.getTime()));
 
     const count = quakes.filter((quake) => {
       return quake.time >= bucketStart.getTime() && quake.time <= bucketEnd.getTime();
     }).length;
 
-    if (bucketEnd >= from) {
-      points.push({
-        label: formatBucketLabel(bucketStart, mode),
-        count,
-      });
-    }
-
-    cursor = nextStart;
+    points.push({
+      label: formatBucketLabel(bucketStart, bucketEnd, bucketCount),
+      count,
+    });
   }
 
   return points;
 };
 
-const alignCursor = (date: Date, mode: BucketMode): Date => {
-  if (mode === 'day') {
-    return startOfDay(date);
+const formatBucketLabel = (bucketStart: Date, bucketEnd: Date, bucketCount: number) => {
+  const sameDay = startOfDay(bucketStart).getTime() === startOfDay(bucketEnd).getTime();
+
+  if (sameDay) {
+    return format(bucketStart, 'MMM d');
   }
 
-  if (mode === 'week') {
-    return startOfWeek(date, { weekStartsOn: 1 });
+  if (bucketCount <= 7) {
+    return `${format(bucketStart, 'MMM d')}-${format(bucketEnd, 'MMM d')}`;
   }
 
-  if (mode === 'month') {
-    return startOfMonth(date);
+  if (bucketStart.getFullYear() !== bucketEnd.getFullYear()) {
+    return `${format(bucketStart, 'yy')}-${format(bucketEnd, 'yy')}`;
   }
 
-  if (mode === 'year') {
-    return startOfYear(date);
-  }
-
-  const year = date.getFullYear();
-  const decadeStartYear = Math.floor(year / 10) * 10;
-  return new Date(decadeStartYear, 0, 1);
-};
-
-const getNextBucketStart = (date: Date, mode: BucketMode): Date => {
-  if (mode === 'day') {
-    return startOfDay(addDays(date, 1));
-  }
-
-  if (mode === 'week') {
-    return startOfWeek(addWeeks(date, 1), { weekStartsOn: 1 });
-  }
-
-  if (mode === 'month') {
-    return startOfMonth(addMonths(date, 1));
-  }
-
-  if (mode === 'year') {
-    return startOfYear(addYears(date, 1));
-  }
-
-  return startOfYear(addYears(date, 10));
-};
-
-const formatBucketLabel = (date: Date, mode: BucketMode): string => {
-  if (mode === 'day') {
-    return format(date, 'EEE');
-  }
-
-  if (mode === 'week') {
-    return format(date, 'MMM d');
-  }
-
-  if (mode === 'month') {
-    return format(date, 'MMM yy');
-  }
-
-  if (mode === 'year') {
-    return format(date, 'yyyy');
-  }
-
-  const startYear = date.getFullYear();
-  return `${startYear}s`;
+  return `${format(bucketStart, 'MMM d')}-${format(bucketEnd, 'MMM d')}`;
 };
