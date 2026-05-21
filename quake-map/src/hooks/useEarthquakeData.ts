@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import type { Earthquake } from '../types/earthquake';
 
 type SortOption = 'time-desc' | 'time-asc' | 'magnitude-desc' | 'magnitude-asc';
@@ -31,7 +31,7 @@ export const useEarthquakeData = (
 
       // 📆 Format dates
       const startTime = format(startDate, 'yyyy-MM-dd');
-      const endTime = format(endDate, 'yyyy-MM-dd');
+      const endTime = format(addDays(endDate, 1), 'yyyy-MM-dd');
       const calculatedOffset = (offset - 1) * 100 + 1;
 
       const orderMap: Record<SortOption, string> = {

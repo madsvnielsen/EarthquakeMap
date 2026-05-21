@@ -2,100 +2,99 @@ import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Earthquake } from '../types/earthquake';
-import { Box, Divider, Link,  Typography } from '@mui/material';
+import { Box, Chip, Divider, Link, Stack, Typography } from '@mui/material';
 import { EarthquakeDetailIcons } from './EarthquakeDetailIcons';
 import { getColorForMagnitude } from '../utils/getColorForMagnetude';
-
-
 
 type Props = {
   quakes: Earthquake[];
 };
 
-
 export const EarthquakeMarkers = ({ quakes }: Props) => {
   return (
     <>
       {quakes.map((eq) => {
-        const {
-          magnitude,
-          place,
-          time,
-          url,
-          alert,
-          felt,
-          mmi,
-          cdi,
-          gap,
-          rms,
-          dmin,
-          magType,
-        } = eq;
-
         const depth = eq.coords[2];
-        const dateStr = new Date(time).toLocaleString();
-
+        const magnitude = eq.magnitude ?? 0;
         const color = getColorForMagnitude(magnitude);
-        const icon = createXDivIcon(color);
+        const dateStr = new Date(eq.time).toLocaleString();
+        const size = Math.max(14, Math.min(34, 12 + magnitude * 2.2));
+        const ringSize = size + 12;
+        const alertLabel = eq.alert ? `Alert ${eq.alert.toUpperCase()}` : null;
+        const icon = createPulseIcon(color, size, ringSize);
 
         return (
           <Marker key={eq.id} position={[eq.coords[0], eq.coords[1]]} icon={icon}>
             <Popup>
-              <Typography variant="h6">{place}</Typography>
-              <Typography variant="subtitle2">{dateStr}</Typography>
+              <Stack spacing={1.2}>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                  <Chip
+                    label={`M ${magnitude.toFixed(1)}`}
+                    sx={{
+                      bgcolor: color,
+                      color: '#07141d',
+                      fontWeight: 700,
+                    }}
+                  />
+                  {alertLabel && (
+                    <Chip
+                      label={alertLabel}
+                      size="small"
+                      sx={{
+                        bgcolor: 'rgba(255, 138, 91, 0.15)',
+                        color: '#ffd3bf',
+                      }}
+                    />
+                  )}
+                </Stack>
 
-              <Divider sx={{ my: 1 }} />
-              {EarthquakeDetailIcons(magnitude, magType, depth, alert, felt, mmi, cdi)}
+                <Box>
+                  <Typography variant="h6">{eq.place}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {dateStr}
+                  </Typography>
+                </Box>
 
-              <Divider sx={{ my: 1 }} />
-
-              <Typography variant="caption">
-                {gap !== undefined && (
-                  <>
-                    <strong>Gap:</strong> {gap}°{' '}
-                  </>
+                <Divider />
+                {EarthquakeDetailIcons(
+                  magnitude,
+                  eq.magType,
+                  depth,
+                  eq.alert,
+                  eq.felt,
+                  eq.mmi,
+                  eq.cdi,
                 )}
+                <Divider />
 
-                {rms !== undefined && (
-                  <>
-                    <strong>RMS:</strong> {rms}{' '}
-                  </>
-                )}
+                <Typography variant="caption" color="text.secondary">
+                  {eq.gap !== undefined ? `Gap ${eq.gap} deg  ` : ''}
+                  {eq.rms !== undefined ? `RMS ${eq.rms}  ` : ''}
+                  {eq.dmin !== undefined ? `dMin ${eq.dmin.toFixed(2)} km` : ''}
+                </Typography>
 
-                {dmin !== undefined && (
-                  <>
-                    <strong>dMin:</strong> {dmin.toFixed(2)} km
-                  </>
-                )}
-              </Typography>
-
-              <Box sx={{ mt: 1 }}>
-                <Link href={url} target="_blank" rel="noopener">
+                <Link href={eq.url} target="_blank" rel="noopener" underline="hover">
                   More info on USGS
                 </Link>
-              </Box>
+              </Stack>
             </Popup>
           </Marker>
         );
       })}
-
     </>
   );
 };
 
-
-
-const createXDivIcon = (color: string) =>
+const createPulseIcon = (color: string, size: number, ringSize: number) =>
   new L.DivIcon({
-    className: 'custom-icon',
+    className: 'custom-quake-marker',
     html: `
-      <div
-        class="leaflet-marker-circle"
-        style="background-color: ${color};animation-delay: ${ Math.random().toFixed(2) + 's'};"
-
-      ></div>
+      <div class="quake-marker" style="--marker-color:${color};--marker-size:${size}px;--ring-size:${ringSize}px;--marker-delay:${(Math.random() * 1.6).toFixed(2)}s;">
+        <span class="quake-marker__pulse"></span>
+        <span class="quake-marker__ring"></span>
+        <span class="quake-marker__core"></span>
+      </div>
     `,
-    iconSize: [20, 20],
-    iconAnchor: [5, 5],
+    iconSize: [ringSize, ringSize],
+    iconAnchor: [ringSize / 2, ringSize / 2],
   });
-

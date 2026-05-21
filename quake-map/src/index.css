@@ -1,97 +1,162 @@
-@import url('https://fonts.googleapis.com/css2?family=Manufacturing+Consent&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 :root {
-  font-family: roboto, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  color: #f4f7fb;
+  background: #07141d;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --panel-bg: rgba(9, 21, 31, 0.78);
+  --panel-border: rgba(169, 192, 215, 0.16);
+  --panel-shadow: 0 20px 60px rgba(0, 0, 0, 0.38);
+  --accent: #ff8a5b;
+  --accent-soft: rgba(255, 138, 91, 0.16);
+  --teal-soft: rgba(111, 214, 194, 0.16);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+* {
+  box-sizing: border-box;
 }
 
-body {
+html,
+body,
+#root {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+body {
+  overflow: hidden;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+a {
+  color: inherit;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
-@keyframes bounceCircle {
+.glass-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(18px);
+  border-radius: 10px;
+}
+
+.quake-map-shell .leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #0a1821;
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+}
+
+.quake-map-shell .leaflet-popup-content-wrapper,
+.quake-map-shell .leaflet-popup-tip {
+  background: rgba(7, 20, 29, 0.96);
+  color: #f4f7fb;
+  border: 1px solid rgba(169, 192, 215, 0.12);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.quake-map-shell .leaflet-popup-content {
+  margin: 12px 14px;
+}
+
+.quake-map-shell .leaflet-control-zoom {
+  border: none;
+  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.25);
+}
+
+.quake-map-shell .leaflet-control-zoom a {
+  background: rgba(9, 21, 31, 0.86);
+  color: #f4f7fb;
+  border: 1px solid rgba(169, 192, 215, 0.16);
+}
+
+.quake-map-shell .leaflet-control-attribution {
+  background: rgba(9, 21, 31, 0.7);
+  color: #9fb3c8;
+}
+
+.quake-map-shell .leaflet-control-attribution a {
+  color: #d8e8ff;
+}
+
+.custom-quake-marker {
+  background: transparent;
+  border: 0;
+}
+
+.quake-marker {
+  position: relative;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  display: block;
+}
+
+.quake-marker__core,
+.quake-marker__pulse,
+.quake-marker__ring {
+  position: absolute;
+  inset: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+}
+
+.quake-marker__core {
+  width: var(--marker-size);
+  height: var(--marker-size);
+  background: var(--marker-color);
+  border: 1px solid rgba(255, 244, 220, 0.95);
+  box-shadow: 0 0 0 1px rgba(5, 12, 18, 0.3), 0 0 22px color-mix(in srgb, var(--marker-color) 38%, transparent);
+}
+
+.quake-marker__ring {
+  width: calc(var(--marker-size) + 6px);
+  height: calc(var(--marker-size) + 6px);
+  border: 1px solid color-mix(in srgb, var(--marker-color) 45%, white 12%);
+  opacity: 0.7;
+}
+
+.quake-marker__pulse {
+  width: calc(var(--marker-size) + 12px);
+  height: calc(var(--marker-size) + 12px);
+  background: color-mix(in srgb, var(--marker-color) 34%, transparent);
+  animation: quakePulse 2.6s ease-out infinite;
+  animation-delay: var(--marker-delay);
+}
+
+@keyframes quakePulse {
   0% {
-    transform: scale(1);
-    opacity: 0.8;
-    
+    transform: translate(-50%, -50%) scale(0.55);
+    opacity: 0.75;
   }
-  50% {
-    transform: scale(1.8);
-    opacity: 0.4;
+  70% {
+    transform: translate(-50%, -50%) scale(1.8);
+    opacity: 0;
   }
   100% {
-    transform: scale(1);
-    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1.85);
+    opacity: 0;
   }
 }
 
-.leaflet-marker-circle {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  animation: bounceCircle 2s ease-in-out infinite;
-  border: 1px solid rgba(0, 0, 0, 0.319);
+@media (max-width: 900px) {
+  body {
+    overflow: auto;
+  }
 }

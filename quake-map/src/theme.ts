@@ -1,55 +1,92 @@
-
 import { createTheme } from '@mui/material/styles';
 
 export const theme = createTheme({
   palette: {
-    mode: 'dark', // or 'light'
+    mode: 'dark',
     primary: {
-      main: '#F9F3EF',
+      main: '#ff8a5b',
+      light: '#ffb48f',
+      dark: '#d96234',
+      contrastText: '#08131c',
     },
     secondary: {
-      main: '#D2C1B6',
+      main: '#6fd6c2',
+      light: '#a9f0e1',
+      dark: '#3ca693',
     },
     background: {
-        default: '#1B3C53',   // <-- Your desired background
-        paper: '#456882',     // optional: background for cards/dialogs
-      },
+      default: '#07141d',
+      paper: '#102432',
+    },
+    text: {
+      primary: '#f4f7fb',
+      secondary: '#9fb3c8',
+    },
+    divider: 'rgba(170, 198, 221, 0.14)',
+  },
+  shape: {
+    borderRadius: 18,
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"IBM Plex Sans", "Segoe UI", sans-serif',
+    h4: {
+      fontFamily: '"Space Grotesk", "IBM Plex Sans", sans-serif',
+      fontWeight: 700,
+      letterSpacing: '-0.04em',
+    },
+    h5: {
+      fontFamily: '"Space Grotesk", "IBM Plex Sans", sans-serif',
+      fontWeight: 700,
+      letterSpacing: '-0.03em',
+    },
+    h6: {
+      fontFamily: '"Space Grotesk", "IBM Plex Sans", sans-serif',
+      fontWeight: 700,
+    },
+    button: {
+      textTransform: 'none',
+      fontWeight: 600,
+      letterSpacing: '0.01em',
+    },
   },
   components: {
-    // Customize buttons
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          background:
+            'radial-gradient(circle at top, rgba(29, 63, 88, 0.65), transparent 34%), linear-gradient(180deg, #07141d 0%, #0b1f2b 100%)',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+          backdropFilter: 'blur(14px)',
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
-          textTransform: 'none',
-          fontWeight: 'bold',
+          borderRadius: 999,
+          paddingInline: 16,
         },
       },
     },
-
-    // Customize slider
-    MuiSlider: {
-      styleOverrides: {
-       
-      },
-    },
-
-    // Customize date picker (applies to TextField used by DatePicker)
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          color: '#fff',
+          backgroundColor: 'rgba(9, 21, 31, 0.72)',
+          borderRadius: 14,
         },
-        
       },
     },
-
-    MuiInputLabel: {
+    MuiChip: {
       styleOverrides: {
         root: {
+          borderRadius: 999,
+          backdropFilter: 'blur(12px)',
         },
       },
     },
