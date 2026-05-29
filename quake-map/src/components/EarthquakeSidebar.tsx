@@ -448,7 +448,12 @@ const EarthquakeSidebar = ({
                       variant={areaSelectionEnabled ? 'contained' : 'outlined'}
                       color="secondary"
                       startIcon={<GridViewRounded />}
-                      onClick={() => setAreaSelectionEnabled((value) => !value)}
+                      onClick={() => {
+                        setAreaSelectionEnabled((value) => !value);
+                        if (isMobile) {
+                          setActivePanel(null);
+                        }
+                      }}
                     >
                       {areaSelectionEnabled ? 'Drawing on map' : 'Draw area'}
                     </Button>

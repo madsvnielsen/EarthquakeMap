@@ -14,23 +14,26 @@ export const EarthquakeHeatmap = ({ quakes }: Props) => {
   useEffect(() => {
     const heatPoints = quakes.map((quake) => {
       const magnitude = quake.magnitude ?? 0;
-      const intensity = Math.max(0.15, Math.min(1, magnitude / 8));
+      const normalizedMagnitude = Math.max(0, Math.min(1, magnitude / 8));
+      const intensity = 0.05 + Math.pow(normalizedMagnitude, 0.9) * 0.38;
       return [quake.coords[0], quake.coords[1], intensity] as [number, number, number];
     });
 
     const heatLayer = (L as any).heatLayer(heatPoints, {
-      radius: 26,
-      blur: 18,
+      radius: 22,
+      blur: 16,
       maxZoom: 9,
-      minOpacity: 0.24,
+      max: 1.9,
+      minOpacity: 0.18,
       gradient: {
-        0.1: '#102440',
-        0.22: '#274a7b',
-        0.36: '#5a4d89',
-        0.5: '#b53a55',
-        0.66: '#e3343f',
-        0.82: '#ff2a2a',
-        1.0: '#b40018',
+        0.08: '#0f2137',
+        0.2: '#21466f',
+        0.34: '#3c6da2',
+        0.5: '#6b63a8',
+        0.66: '#a84f7f',
+        0.8: '#d84a48',
+        0.92: '#ef3b2d',
+        1.0: 'rgba(176, 0, 24, 0.54)',
       },
     });
 

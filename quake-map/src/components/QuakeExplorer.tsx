@@ -37,7 +37,7 @@ const createInitialFilters = (): FilterState => {
 const QuakeExplorer = () => {
   const [selectedCoords, setSelectedCoords] = useState<[number, number] | null>(null);
   const [areaSelectionEnabled, setAreaSelectionEnabled] = useState(false);
-  const [activePanel, setActivePanel] = useState<ActivePanel>('list');
+  const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [draftFilters, setDraftFilters] = useState<FilterState>(() => createInitialFilters());
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(() => createInitialFilters());
