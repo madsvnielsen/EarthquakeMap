@@ -1,5 +1,6 @@
 import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import { differenceInCalendarDays, endOfDay, format, isValid, startOfDay } from 'date-fns';
+import { DatePicker } from '@mui/x-date-pickers';
 import type { Earthquake } from '../types/earthquake';
 
 type Props = {
@@ -9,6 +10,9 @@ type Props = {
   currentEndDate: Date | null;
   previousStartDate: Date | null;
   previousEndDate: Date | null;
+  draftPreviousStartDate: Date | null;
+  draftPreviousEndDate: Date | null;
+  setDraftPreviousEndDate: (value: Date | null) => void;
   loading: boolean;
   hasComparison: boolean;
   isStale: boolean;
@@ -29,6 +33,9 @@ export const EarthquakeComparison = ({
   currentEndDate,
   previousStartDate,
   previousEndDate,
+  draftPreviousStartDate,
+  draftPreviousEndDate,
+  setDraftPreviousEndDate,
   loading,
   hasComparison,
   isStale,
@@ -87,13 +94,41 @@ export const EarthquakeComparison = ({
             variant="contained"
             color="primary"
             onClick={onRunComparison}
-            disabled={!hasValidCurrentRange || loading}
+            disabled={!hasValidCurrentRange || loading || !draftPreviousEndDate || !isValid(draftPreviousEndDate)}
             startIcon={loading ? <CircularProgress size={14} color="inherit" /> : undefined}
           >
             {buttonLabel}
           </Button>
         </Stack>
       </Box>
+
+      {hasValidCurrentRange && (
+        <Box
+          sx={{
+            p: 1.1,
+            borderRadius: '8px',
+            bgcolor: 'rgba(255, 255, 255, 0.035)',
+            border: '1px solid rgba(169, 192, 215, 0.08)',
+          }}
+        >
+          <Stack spacing={1}>
+            <DatePicker
+              label="Comparison period ends"
+              value={draftPreviousEndDate}
+              onChange={setDraftPreviousEndDate}
+              slotProps={{
+                textField: { size: 'small', fullWidth: true },
+              }}
+            />
+            <Typography variant="caption" color="text.secondary">
+              Comparison range: {formatDraftRangeLabel(draftPreviousStartDate, draftPreviousEndDate)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              It will automatically use the same length as the current period.
+            </Typography>
+          </Stack>
+        </Box>
+      )}
 
       {!hasComparison ? (
         <Typography variant="caption" color="text.secondary">
@@ -311,6 +346,14 @@ const buildTakeaways = (
 const formatRangeLabel = (startDate: Date | null, endDate: Date | null) => {
   if (!startDate || !endDate || !isValid(startDate) || !isValid(endDate)) {
     return 'Invalid range';
+  }
+
+  return `${format(startDate, 'yy/MM/dd')} - ${format(endDate, 'yy/MM/dd')}`;
+};
+
+const formatDraftRangeLabel = (startDate: Date | null, endDate: Date | null) => {
+  if (!startDate || !endDate || !isValid(startDate) || !isValid(endDate)) {
+    return 'Choose a valid end date';
   }
 
   return `${format(startDate, 'yy/MM/dd')} - ${format(endDate, 'yy/MM/dd')}`;

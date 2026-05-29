@@ -81,6 +81,9 @@ type Props = {
   comparisonEndDate: Date | null;
   previousComparisonStartDate: Date | null;
   previousComparisonEndDate: Date | null;
+  comparisonDraftEndDate: Date | null;
+  setComparisonDraftEndDate: (value: Date | null) => void;
+  comparisonDraftStartDate: Date | null;
   onRunComparison: () => void;
 };
 
@@ -124,6 +127,9 @@ const EarthquakeSidebar = ({
   comparisonEndDate,
   previousComparisonStartDate,
   previousComparisonEndDate,
+  comparisonDraftEndDate,
+  setComparisonDraftEndDate,
+  comparisonDraftStartDate,
   onRunComparison,
 }: Props) => {
   const theme = useTheme();
@@ -538,6 +544,9 @@ const EarthquakeSidebar = ({
                 currentEndDate={comparisonEndDate}
                 previousStartDate={previousComparisonStartDate}
                 previousEndDate={previousComparisonEndDate}
+                draftPreviousStartDate={comparisonDraftStartDate}
+                draftPreviousEndDate={comparisonDraftEndDate}
+                setDraftPreviousEndDate={setComparisonDraftEndDate}
                 loading={comparisonLoading}
                 hasComparison={hasComparison}
                 isStale={comparisonStale}

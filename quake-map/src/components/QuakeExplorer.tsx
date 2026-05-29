@@ -26,6 +26,7 @@ type FilterState = {
 type ComparisonSession = {
   filters: FilterState;
   currentQuakes: Earthquake[];
+  comparisonEndDate: Date;
 };
 
 const createInitialFilters = (): FilterState => {
@@ -51,6 +52,9 @@ const QuakeExplorer = () => {
   const [comparisonSession, setComparisonSession] = useState<ComparisonSession | null>(null);
   const [resolvedComparisonSignature, setResolvedComparisonSignature] = useState<string | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [comparisonDraftEndDate, setComparisonDraftEndDate] = useState<Date | null>(() =>
+    getDefaultComparisonEndDate(createInitialFilters().startDate),
+  );
 
   const itemsPerPage = 10;
   const { quakes, loading, didReachLimit } = useEarthquakeData(
@@ -62,7 +66,13 @@ const QuakeExplorer = () => {
   );
 
   const comparisonPreviousRange = useMemo(() => {
-    return comparisonSession ? getPreviousPeriodRange(comparisonSession.filters.startDate, comparisonSession.filters.endDate) : null;
+    return comparisonSession
+      ? getComparisonRange(
+          comparisonSession.filters.startDate,
+          comparisonSession.filters.endDate,
+          comparisonSession.comparisonEndDate,
+        )
+      : null;
   }, [comparisonSession]);
 
   const { quakes: comparisonQuakes, loading: comparisonLoading } = useEarthquakeData(
@@ -85,6 +95,10 @@ const QuakeExplorer = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [quakes]);
+
+  useEffect(() => {
+    setComparisonDraftEndDate(getDefaultComparisonEndDate(appliedFilters.startDate));
+  }, [appliedFilters.startDate, appliedFilters.endDate, appliedFilters.minMagnitude, appliedFilters.sortOption, appliedFilters.selectedBounds]);
 
   useEffect(() => {
     if (!comparisonSession || !comparisonSignature || comparisonLoading) {
@@ -133,6 +147,7 @@ const QuakeExplorer = () => {
     setComparisonSession({
       filters: cloneFilters(appliedFilters),
       currentQuakes: quakes,
+      comparisonEndDate: comparisonDraftEndDate ? new Date(comparisonDraftEndDate) : getDefaultComparisonEndDate(appliedFilters.startDate) ?? new Date(),
     });
     setResolvedComparisonSignature(null);
   };
@@ -308,6 +323,11 @@ const QuakeExplorer = () => {
             comparisonEndDate={comparisonSession?.filters.endDate ?? appliedFilters.endDate}
             previousComparisonStartDate={comparisonPreviousRange?.startDate ?? null}
             previousComparisonEndDate={comparisonPreviousRange?.endDate ?? null}
+            comparisonDraftEndDate={comparisonDraftEndDate}
+            setComparisonDraftEndDate={setComparisonDraftEndDate}
+            comparisonDraftStartDate={
+              getComparisonRange(appliedFilters.startDate, appliedFilters.endDate, comparisonDraftEndDate)?.startDate ?? null
+            }
             onRunComparison={handleRunComparison}
           />
         </Box>
@@ -444,18 +464,35 @@ const serializeFilters = (filters: FilterState) => {
   });
 };
 
-const getPreviousPeriodRange = (startDate: Date | null, endDate: Date | null) => {
-  if (!isValidDateRange(startDate, endDate) || !startDate || !endDate) {
+const getComparisonRange = (
+  currentStartDate: Date | null,
+  currentEndDate: Date | null,
+  comparisonEndDate: Date | null,
+) => {
+  if (!isValidDateRange(currentStartDate, currentEndDate) || !currentStartDate || !currentEndDate || !comparisonEndDate) {
     return null;
   }
 
-  const currentStart = startOfDay(startDate);
-  const spanDays = differenceInCalendarDays(startOfDay(endDate), currentStart) + 1;
-  const previousEndDate = subDays(currentStart, 1);
-  const previousStartDate = subDays(previousEndDate, spanDays - 1);
+  if (!isValid(comparisonEndDate)) {
+    return null;
+  }
+
+  const currentStart = startOfDay(currentStartDate);
+  const currentEnd = startOfDay(currentEndDate);
+  const spanDays = differenceInCalendarDays(currentEnd, currentStart) + 1;
+  const comparisonEnd = startOfDay(comparisonEndDate);
+  const comparisonStart = subDays(comparisonEnd, spanDays - 1);
 
   return {
-    startDate: previousStartDate,
-    endDate: previousEndDate,
+    startDate: comparisonStart,
+    endDate: comparisonEnd,
   };
+};
+
+const getDefaultComparisonEndDate = (currentStartDate: Date | null) => {
+  if (!currentStartDate || !isValid(currentStartDate)) {
+    return null;
+  }
+
+  return subDays(startOfDay(currentStartDate), 1);
 };
