@@ -11,6 +11,7 @@ import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material'
 type SortOption = 'magnitude-desc' | 'magnitude-asc' | 'time-desc' | 'time-asc' | null;
 type ActivePanel = 'filters' | 'list' | 'insights' | null;
 type Bounds = [[number, number], [number, number]] | null;
+type MapMode = 'points' | 'heatmap';
 
 type FilterState = {
   minMagnitude: number;
@@ -40,6 +41,7 @@ const QuakeExplorer = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [draftFilters, setDraftFilters] = useState<FilterState>(() => createInitialFilters());
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(() => createInitialFilters());
+  const [mapMode, setMapMode] = useState<MapMode>('points');
   const [initialLoading, setInitialLoading] = useState(true);
 
   const itemsPerPage = 10;
@@ -164,6 +166,7 @@ const QuakeExplorer = () => {
         >
           <EarthquakeMap
             quakes={quakes}
+            mapMode={mapMode}
             selectedCoords={selectedCoords}
             areaSelectionEnabled={areaSelectionEnabled}
             setSelectedBounds={(bounds) =>
@@ -246,6 +249,8 @@ const QuakeExplorer = () => {
                 sortOption: option,
               }))
             }
+            mapMode={mapMode}
+            setMapMode={setMapMode}
             onResetFilters={handleResetDraftFilters}
             hasPendingChanges={hasPendingChanges}
             canApply={hasValidDraftRange && hasPendingChanges && !loading}

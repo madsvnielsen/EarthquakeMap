@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { Earthquake } from '../types/earthquake';
 import {
   CalendarMonthRounded,
@@ -19,6 +19,8 @@ import {
   Chip,
   Divider,
   IconButton,
+  Menu,
+  MenuItem,
   Slider,
   Stack,
   Tooltip,
@@ -35,6 +37,7 @@ import { getColorForMagnitude } from '../utils/getColorForMagnetude';
 
 type SortOption = 'time-desc' | 'time-asc' | 'magnitude-desc' | 'magnitude-asc' | null;
 type ActivePanel = 'filters' | 'list' | 'insights' | null;
+type MapMode = 'points' | 'heatmap';
 
 type Props = {
   quakes: Earthquake[];
@@ -62,6 +65,8 @@ type Props = {
   setActivePanel: (panel: ActivePanel) => void;
   sortOption: SortOption;
   setSortOption: (option: SortOption) => void;
+  mapMode: MapMode;
+  setMapMode: (mode: MapMode) => void;
   onResetFilters: () => void;
   hasPendingChanges: boolean;
   canApply: boolean;
@@ -93,6 +98,8 @@ const EarthquakeSidebar = ({
   setActivePanel,
   sortOption,
   setSortOption,
+  mapMode,
+  setMapMode,
   onResetFilters,
   hasPendingChanges,
   canApply,
@@ -100,6 +107,7 @@ const EarthquakeSidebar = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const areaFilter = selectedBounds !== null;
+  const [mapModeAnchorEl, setMapModeAnchorEl] = useState<null | HTMLElement>(null);
 
   const togglePanel = (panel: Exclude<ActivePanel, null>) => {
     setActivePanel(activePanel === panel ? null : panel);
@@ -190,6 +198,59 @@ const EarthquakeSidebar = ({
               <InsightsRounded fontSize="small" />
             </IconButton>
           </Tooltip>
+
+          <Tooltip title="Map mode" placement="left" arrow>
+            <IconButton
+              onClick={(event) => setMapModeAnchorEl(event.currentTarget)}
+              className="glass-panel"
+              sx={{
+                width: 46,
+                height: 46,
+                color: mapMode === 'heatmap' ? 'primary.main' : 'text.primary',
+                bgcolor:
+                  mapMode === 'heatmap' ? 'rgba(255, 138, 91, 0.14)' : 'rgba(9, 21, 31, 0.78)',
+              }}
+            >
+              <LayersRounded fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+          <Menu
+            anchorEl={mapModeAnchorEl}
+            open={Boolean(mapModeAnchorEl)}
+            onClose={() => setMapModeAnchorEl(null)}
+            anchorOrigin={{
+              vertical: isMobile ? 'top' : 'center',
+              horizontal: isMobile ? 'right' : 'left',
+            }}
+            transformOrigin={{
+              vertical: isMobile ? 'bottom' : 'center',
+              horizontal: isMobile ? 'right' : 'right',
+            }}
+            PaperProps={{
+              className: 'glass-panel',
+              sx: { borderRadius: '14px', minWidth: 156 },
+            }}
+          >
+            <MenuItem
+              selected={mapMode === 'points'}
+              onClick={() => {
+                setMapMode('points');
+                setMapModeAnchorEl(null);
+              }}
+            >
+              Points
+            </MenuItem>
+            <MenuItem
+              selected={mapMode === 'heatmap'}
+              onClick={() => {
+                setMapMode('heatmap');
+                setMapModeAnchorEl(null);
+              }}
+            >
+              Heatmap
+            </MenuItem>
+          </Menu>
         </Stack>
 
         <Box
