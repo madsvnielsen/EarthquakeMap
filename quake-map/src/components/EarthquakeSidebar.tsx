@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import type { Earthquake } from '../types/earthquake';
 import {
   CalendarMonthRounded,
+  CompareArrowsRounded,
   ClearRounded,
   FilterAltRounded,
   GridViewRounded,
@@ -32,16 +33,18 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { subDays, subYears } from 'date-fns';
 import { EarthquakeDetailIcons } from './EarthquakeDetailIcons';
+import { EarthquakeComparison } from './EarthquakeComparison';
 import { EarthquakeInsights } from './EarthquakeInsights';
 import { getColorForMagnitude } from '../utils/getColorForMagnetude';
 
 type SortOption = 'time-desc' | 'time-asc' | 'magnitude-desc' | 'magnitude-asc' | null;
-type ActivePanel = 'filters' | 'list' | 'insights' | null;
+type ActivePanel = 'filters' | 'list' | 'insights' | 'compare' | null;
 type MapMode = 'points' | 'heatmap';
 
 type Props = {
   quakes: Earthquake[];
   allQuakes: Earthquake[];
+  comparisonCurrentQuakes: Earthquake[];
   activeMinMagnitude: number;
   onSelectQuake: (coords: [number, number]) => void;
   currentPage: number;
@@ -70,11 +73,21 @@ type Props = {
   onResetFilters: () => void;
   hasPendingChanges: boolean;
   canApply: boolean;
+  comparisonQuakes: Earthquake[];
+  comparisonLoading: boolean;
+  hasComparison: boolean;
+  comparisonStale: boolean;
+  comparisonStartDate: Date | null;
+  comparisonEndDate: Date | null;
+  previousComparisonStartDate: Date | null;
+  previousComparisonEndDate: Date | null;
+  onRunComparison: () => void;
 };
 
 const EarthquakeSidebar = ({
   quakes,
   allQuakes,
+  comparisonCurrentQuakes,
   activeMinMagnitude,
   onSelectQuake,
   currentPage,
@@ -103,6 +116,15 @@ const EarthquakeSidebar = ({
   onResetFilters,
   hasPendingChanges,
   canApply,
+  comparisonQuakes,
+  comparisonLoading,
+  hasComparison,
+  comparisonStale,
+  comparisonStartDate,
+  comparisonEndDate,
+  previousComparisonStartDate,
+  previousComparisonEndDate,
+  onRunComparison,
 }: Props) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -199,6 +221,22 @@ const EarthquakeSidebar = ({
             </IconButton>
           </Tooltip>
 
+          <Tooltip title="Compare periods" placement="left" arrow>
+            <IconButton
+              onClick={() => togglePanel('compare')}
+              className="glass-panel"
+              sx={{
+                width: { xs: 40, md: 46 },
+                height: { xs: 40, md: 46 },
+                color: activePanel === 'compare' ? 'secondary.main' : 'text.primary',
+                bgcolor:
+                  activePanel === 'compare' ? 'rgba(111, 214, 194, 0.14)' : 'rgba(9, 21, 31, 0.78)',
+              }}
+            >
+              <CompareArrowsRounded sx={{ fontSize: { xs: 18, md: 20 } }} />
+            </IconButton>
+          </Tooltip>
+
           <Tooltip title="Map mode" placement="left" arrow>
             <IconButton
               onClick={(event) => setMapModeAnchorEl(event.currentTarget)}
@@ -282,6 +320,8 @@ const EarthquakeSidebar = ({
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                 {activePanel === 'filters'
                   ? 'Filters'
+                  : activePanel === 'compare'
+                    ? 'Compare'
                   : activePanel === 'insights'
                     ? 'Insights'
                     : 'Earthquake list'}
@@ -293,6 +333,12 @@ const EarthquakeSidebar = ({
                       ? 'Changes are ready to apply on the map.'
                       : 'Finish the date range before applying.'
                     : 'Refine intensity, date range, sort, and map area.'
+                  : activePanel === 'compare'
+                    ? hasComparison
+                      ? comparisonStale
+                        ? 'Last comparison is preserved. Run a fresh one for the current data.'
+                        : 'Current period compared with the previous equal-length period.'
+                      : 'Fetch the previous period only when you want to compare.'
                   : activePanel === 'insights'
                     ? 'Quick patterns from the current filtered dataset.'
                     : isMobile
@@ -482,6 +528,21 @@ const EarthquakeSidebar = ({
                   Reset draft filters
                 </Button>
               </Stack>
+            </Box>
+          ) : activePanel === 'compare' ? (
+            <Box sx={{ px: 1.75, py: 1.5, overflowY: 'auto' }}>
+              <EarthquakeComparison
+                currentQuakes={comparisonCurrentQuakes}
+                previousQuakes={comparisonQuakes}
+                currentStartDate={comparisonStartDate}
+                currentEndDate={comparisonEndDate}
+                previousStartDate={previousComparisonStartDate}
+                previousEndDate={previousComparisonEndDate}
+                loading={comparisonLoading}
+                hasComparison={hasComparison}
+                isStale={comparisonStale}
+                onRunComparison={onRunComparison}
+              />
             </Box>
           ) : activePanel === 'insights' ? (
             <Box sx={{ px: 1.75, py: 1.5, overflowY: 'auto' }}>

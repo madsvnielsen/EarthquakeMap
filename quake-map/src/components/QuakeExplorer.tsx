@@ -3,13 +3,14 @@ import { useEarthquakeData } from '../hooks/useEarthquakeData';
 import { EarthquakeMap } from './EarthquakeMap';
 import EarthquakeSidebar from './EarthquakeSidebar';
 import { AreaSelectionAlert } from './AreaSelectionAlert';
-import { isValid, subDays } from 'date-fns';
+import { differenceInCalendarDays, isValid, startOfDay, subDays } from 'date-fns';
 import { TopBar } from './TopBar';
 import { SplashScreen } from './SplashScreen';
 import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
+import type { Earthquake } from '../types/earthquake';
 
 type SortOption = 'magnitude-desc' | 'magnitude-asc' | 'time-desc' | 'time-asc' | null;
-type ActivePanel = 'filters' | 'list' | 'insights' | null;
+type ActivePanel = 'filters' | 'list' | 'insights' | 'compare' | null;
 type Bounds = [[number, number], [number, number]] | null;
 type MapMode = 'points' | 'heatmap';
 
@@ -20,6 +21,11 @@ type FilterState = {
   endDate: Date | null;
   sortOption: SortOption;
   selectedBounds: Bounds;
+};
+
+type ComparisonSession = {
+  filters: FilterState;
+  currentQuakes: Earthquake[];
 };
 
 const createInitialFilters = (): FilterState => {
@@ -42,6 +48,8 @@ const QuakeExplorer = () => {
   const [draftFilters, setDraftFilters] = useState<FilterState>(() => createInitialFilters());
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(() => createInitialFilters());
   const [mapMode, setMapMode] = useState<MapMode>('points');
+  const [comparisonSession, setComparisonSession] = useState<ComparisonSession | null>(null);
+  const [resolvedComparisonSignature, setResolvedComparisonSignature] = useState<string | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
 
   const itemsPerPage = 10;
@@ -53,6 +61,21 @@ const QuakeExplorer = () => {
     appliedFilters.selectedBounds,
   );
 
+  const comparisonPreviousRange = useMemo(() => {
+    return comparisonSession ? getPreviousPeriodRange(comparisonSession.filters.startDate, comparisonSession.filters.endDate) : null;
+  }, [comparisonSession]);
+
+  const { quakes: comparisonQuakes, loading: comparisonLoading } = useEarthquakeData(
+    comparisonSession?.filters.minMagnitude ?? 0,
+    comparisonPreviousRange?.startDate ?? null,
+    comparisonPreviousRange?.endDate ?? null,
+    comparisonSession?.filters.sortOption ?? null,
+    comparisonSession?.filters.selectedBounds ?? null,
+    Boolean(comparisonSession && comparisonPreviousRange),
+  );
+
+  const comparisonSignature = comparisonSession ? serializeFilters(comparisonSession.filters) : null;
+
   useEffect(() => {
     if (!loading) {
       setInitialLoading(false);
@@ -63,11 +86,21 @@ const QuakeExplorer = () => {
     setCurrentPage(1);
   }, [quakes]);
 
+  useEffect(() => {
+    if (!comparisonSession || !comparisonSignature || comparisonLoading) {
+      return;
+    }
+
+    setResolvedComparisonSignature(comparisonSignature);
+  }, [comparisonLoading, comparisonSession, comparisonSignature]);
+
   const totalPages = Math.max(1, Math.ceil(quakes.length / itemsPerPage));
   const paginatedQuakes = quakes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const hasValidDraftRange = isValidDateRange(draftFilters.startDate, draftFilters.endDate);
   const hasPendingChanges = !filtersEqual(draftFilters, appliedFilters);
+  const comparisonStale = comparisonSession ? !filtersEqual(appliedFilters, comparisonSession.filters) : false;
+  const hasResolvedComparison = comparisonSession !== null && resolvedComparisonSignature === comparisonSignature;
 
   const overlayState = loading
     ? 'loading'
@@ -90,6 +123,18 @@ const QuakeExplorer = () => {
     const resetFilters = createInitialFilters();
     setDraftFilters(resetFilters);
     setAreaSelectionEnabled(false);
+  };
+
+  const handleRunComparison = () => {
+    if (!isValidDateRange(appliedFilters.startDate, appliedFilters.endDate) || loading) {
+      return;
+    }
+
+    setComparisonSession({
+      filters: cloneFilters(appliedFilters),
+      currentQuakes: quakes,
+    });
+    setResolvedComparisonSignature(null);
   };
 
   const handleNextPage = () => {
@@ -182,6 +227,7 @@ const QuakeExplorer = () => {
           <EarthquakeSidebar
             quakes={paginatedQuakes}
             allQuakes={quakes}
+            comparisonCurrentQuakes={comparisonSession?.currentQuakes ?? quakes}
             activeMinMagnitude={appliedFilters.minMagnitude}
             onSelectQuake={setSelectedCoords}
             currentPage={currentPage}
@@ -254,6 +300,15 @@ const QuakeExplorer = () => {
             onResetFilters={handleResetDraftFilters}
             hasPendingChanges={hasPendingChanges}
             canApply={hasValidDraftRange && hasPendingChanges && !loading}
+            comparisonQuakes={comparisonQuakes}
+            comparisonLoading={comparisonLoading}
+            hasComparison={hasResolvedComparison}
+            comparisonStale={comparisonStale}
+            comparisonStartDate={comparisonSession?.filters.startDate ?? appliedFilters.startDate}
+            comparisonEndDate={comparisonSession?.filters.endDate ?? appliedFilters.endDate}
+            previousComparisonStartDate={comparisonPreviousRange?.startDate ?? null}
+            previousComparisonEndDate={comparisonPreviousRange?.endDate ?? null}
+            onRunComparison={handleRunComparison}
           />
         </Box>
       </Box>
@@ -377,3 +432,30 @@ const boundsEqual = (a: Bounds, b: Bounds) => {
 };
 
 export default QuakeExplorer;
+
+const serializeFilters = (filters: FilterState) => {
+  return JSON.stringify({
+    minMagnitude: filters.minMagnitude,
+    sliderValue: filters.sliderValue,
+    sortOption: filters.sortOption,
+    startDate: dateValue(filters.startDate),
+    endDate: dateValue(filters.endDate),
+    selectedBounds: filters.selectedBounds,
+  });
+};
+
+const getPreviousPeriodRange = (startDate: Date | null, endDate: Date | null) => {
+  if (!isValidDateRange(startDate, endDate) || !startDate || !endDate) {
+    return null;
+  }
+
+  const currentStart = startOfDay(startDate);
+  const spanDays = differenceInCalendarDays(startOfDay(endDate), currentStart) + 1;
+  const previousEndDate = subDays(currentStart, 1);
+  const previousStartDate = subDays(previousEndDate, spanDays - 1);
+
+  return {
+    startDate: previousStartDate,
+    endDate: previousEndDate,
+  };
+};

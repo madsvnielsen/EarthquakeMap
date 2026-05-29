@@ -13,6 +13,7 @@ export const useEarthquakeData = (
   endDate: Date | null,
   sortOption: SortOption,
   bounds?: Bounds | null,
+  enabled = true,
 ) => {
   const [quakes, setQuakes] = useState<Earthquake[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,11 @@ export const useEarthquakeData = (
     let cancelled = false;
 
     const fetchData = async () => {
+      if (!enabled) {
+        setLoading(false);
+        return;
+      }
+
       if (!startDate || !endDate || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
         return;
       }
@@ -116,7 +122,7 @@ export const useEarthquakeData = (
     return () => {
       cancelled = true;
     };
-  }, [minMagnitude, startDate, endDate, sortOption, bounds]);
+  }, [minMagnitude, startDate, endDate, sortOption, bounds, enabled]);
 
   return { quakes, loading, didReachLimit };
 };
