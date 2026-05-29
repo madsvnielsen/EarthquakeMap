@@ -131,24 +131,24 @@ const EarthquakeSidebar = ({
           left: { xs: 12, md: 'auto' },
           right: { xs: 12, md: 20 },
           top: { xs: 'auto', md: 112 },
-          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 20px)', md: 20 },
+          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 52px)', md: 20 },
           zIndex: 650,
           display: 'flex',
           alignItems: { xs: 'stretch', md: 'flex-start' },
           flexDirection: { xs: 'column-reverse', md: 'row' },
-          gap: 1.25,
+          gap: { xs: 1, md: 1.25 },
           pointerEvents: 'none',
         }}
       >
         <Stack
           direction={{ xs: 'row', md: 'column' }}
-          spacing={1.25}
+          spacing={{ xs: 0.75, md: 1.25 }}
           sx={{
             pointerEvents: 'auto',
             justifyContent: { xs: 'flex-end', md: 'flex-start' },
             alignSelf: { xs: 'flex-end', md: 'auto' },
             flexShrink: 0,
-            pb: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 4px)', md: 0 },
+            pr: { xs: 2, md: 0 },
           }}
         >
           <Tooltip title="Filters" placement="left" arrow>
@@ -156,14 +156,14 @@ const EarthquakeSidebar = ({
               onClick={() => togglePanel('filters')}
               className="glass-panel"
               sx={{
-                width: 46,
-                height: 46,
+                width: { xs: 40, md: 46 },
+                height: { xs: 40, md: 46 },
                 color: activePanel === 'filters' ? 'primary.main' : 'text.primary',
                 bgcolor:
                   activePanel === 'filters' ? 'rgba(255, 138, 91, 0.14)' : 'rgba(9, 21, 31, 0.78)',
               }}
             >
-              <FilterAltRounded fontSize="small" />
+              <FilterAltRounded sx={{ fontSize: { xs: 18, md: 20 } }} />
             </IconButton>
           </Tooltip>
 
@@ -172,14 +172,14 @@ const EarthquakeSidebar = ({
               onClick={() => togglePanel('list')}
               className="glass-panel"
               sx={{
-                width: 46,
-                height: 46,
+                width: { xs: 40, md: 46 },
+                height: { xs: 40, md: 46 },
                 color: activePanel === 'list' ? 'secondary.main' : 'text.primary',
                 bgcolor:
                   activePanel === 'list' ? 'rgba(111, 214, 194, 0.14)' : 'rgba(9, 21, 31, 0.78)',
               }}
             >
-              <ViewListRounded fontSize="small" />
+              <ViewListRounded sx={{ fontSize: { xs: 18, md: 20 } }} />
             </IconButton>
           </Tooltip>
 
@@ -188,14 +188,14 @@ const EarthquakeSidebar = ({
               onClick={() => togglePanel('insights')}
               className="glass-panel"
               sx={{
-                width: 46,
-                height: 46,
+                width: { xs: 40, md: 46 },
+                height: { xs: 40, md: 46 },
                 color: activePanel === 'insights' ? 'primary.light' : 'text.primary',
                 bgcolor:
                   activePanel === 'insights' ? 'rgba(255, 138, 91, 0.12)' : 'rgba(9, 21, 31, 0.78)',
               }}
             >
-              <InsightsRounded fontSize="small" />
+              <InsightsRounded sx={{ fontSize: { xs: 18, md: 20 } }} />
             </IconButton>
           </Tooltip>
 
@@ -204,14 +204,14 @@ const EarthquakeSidebar = ({
               onClick={(event) => setMapModeAnchorEl(event.currentTarget)}
               className="glass-panel"
               sx={{
-                width: 46,
-                height: 46,
+                width: { xs: 40, md: 46 },
+                height: { xs: 40, md: 46 },
                 color: mapMode === 'heatmap' ? 'primary.main' : 'text.primary',
                 bgcolor:
                   mapMode === 'heatmap' ? 'rgba(255, 138, 91, 0.14)' : 'rgba(9, 21, 31, 0.78)',
               }}
             >
-              <LayersRounded fontSize="small" />
+              <LayersRounded sx={{ fontSize: { xs: 18, md: 20 } }} />
             </IconButton>
           </Tooltip>
 
