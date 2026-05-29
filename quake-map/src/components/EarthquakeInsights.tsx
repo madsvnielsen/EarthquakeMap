@@ -8,11 +8,25 @@ import {
   isValid,
   startOfDay,
 } from 'date-fns';
+import {
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  Tooltip,
+  type ChartData,
+  type ChartOptions,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 type Props = {
   quakes: Earthquake[];
   startDate: Date | null;
   endDate: Date | null;
+  minMagnitude: number;
 };
 
 type HistogramBin = {
@@ -26,16 +40,13 @@ type SeriesPoint = {
   count: number;
 };
 
-type TimeSeries = {
-  label: string;
-  points: SeriesPoint[];
-};
-
 const BAR_COLOR = '#ff8a5b';
 const ALT_BAR_COLOR = '#6fd6c2';
+const GRID_COLOR = 'rgba(169, 192, 215, 0.12)';
+const TICK_COLOR = '#9fb3c8';
 
-export const EarthquakeInsights = ({ quakes, startDate, endDate }: Props) => {
-  const magnitudeBins = buildMagnitudeHistogram(quakes);
+export const EarthquakeInsights = ({ quakes, startDate, endDate, minMagnitude }: Props) => {
+  const magnitudeBins = buildMagnitudeHistogram(quakes, minMagnitude);
   const depthBins = buildDepthHistogram(quakes);
   const timeSeries = buildAdaptiveTimeSeries(quakes, startDate, endDate);
 
@@ -57,9 +68,9 @@ export const EarthquakeInsights = ({ quakes, startDate, endDate }: Props) => {
 
       <InsightBlock
         title="Quakes over time"
-        subtitle={`Activity grouped into up to 20 time buckets for the current region and selected period.`}
+        subtitle="Activity grouped into up to 20 time buckets for the current region and selected period."
       >
-        <TimeSeriesChart points={timeSeries.points} emptyLabel="Choose a valid date range to see activity." />
+        <TimeSeriesChart points={timeSeries} emptyLabel="Choose a valid date range to see activity." />
       </InsightBlock>
     </Stack>
   );
@@ -99,8 +110,6 @@ const HistogramChart = ({
   color: string;
   emptyLabel: string;
 }) => {
-  const maxPercentage = Math.max(...bins.map((bin) => bin.percentage), 0);
-
   if (!bins.some((bin) => bin.count > 0)) {
     return (
       <Typography variant="caption" color="text.secondary">
@@ -109,66 +118,54 @@ const HistogramChart = ({
     );
   }
 
-  return (
-    <Stack spacing={1}>
-      {bins.map((bin) => {
-        const width = maxPercentage === 0 ? 0 : (bin.percentage / maxPercentage) * 100;
+  const data: ChartData<'bar'> = {
+    labels: bins.map((bin) => bin.label),
+    datasets: [
+      {
+        label: 'Percent',
+        data: bins.map((bin) => Number(bin.percentage.toFixed(2))),
+        backgroundColor: color,
+        borderRadius: 6,
+        borderSkipped: false,
+      },
+    ],
+  };
 
-        return (
-          <Box
-            key={bin.label}
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '72px 1fr auto', md: '82px 1fr auto' },
-              alignItems: 'center',
-              columnGap: 1,
-            }}
-          >
-            <Typography variant="caption" color="text.secondary">
-              {bin.label}
-            </Typography>
-            <Box
-              sx={{
-                position: 'relative',
-                height: 18,
-                borderRadius: '5px',
-                overflow: 'hidden',
-                bgcolor: 'rgba(159, 179, 200, 0.12)',
-                border: '1px solid rgba(169, 192, 215, 0.08)',
-              }}
-            >
-              <Box
-                sx={{
-                  height: '100%',
-                  width: `${width}%`,
-                  minWidth: bin.count > 0 ? 8 : 0,
-                  bgcolor: color,
-                  borderRadius: '4px',
-                  transition: 'width 180ms ease',
-                }}
-              />
-              <Typography
-                variant="caption"
-                sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 600,
-                  color: width > 45 ? '#08131c' : 'text.secondary',
-                }}
-              >
-                {bin.count}
-              </Typography>
-            </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right', minWidth: 34 }}>
-              {bin.percentage.toFixed(0)}%
-            </Typography>
-          </Box>
-        );
-      })}
-    </Stack>
+  const options: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const bin = bins[context.dataIndex];
+            return `${bin.count} quakes (${bin.percentage.toFixed(1)}%)`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        grid: { color: GRID_COLOR },
+        ticks: {
+          color: TICK_COLOR,
+          callback: (value) => `${value}%`,
+        },
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: TICK_COLOR },
+      },
+    },
+  };
+
+  return (
+    <Box sx={{ height: Math.max(180, bins.length * 28) }}>
+      <Bar data={data} options={options} />
+    </Box>
   );
 };
 
@@ -179,8 +176,6 @@ const TimeSeriesChart = ({
   points: SeriesPoint[];
   emptyLabel: string;
 }) => {
-  const maxCount = Math.max(...points.map((point) => point.count), 0);
-
   if (points.length === 0) {
     return (
       <Typography variant="caption" color="text.secondary">
@@ -189,7 +184,9 @@ const TimeSeriesChart = ({
     );
   }
 
-  if (maxCount === 0) {
+  const hasData = points.some((point) => point.count > 0);
+
+  if (!hasData) {
     return (
       <Typography variant="caption" color="text.secondary">
         No earthquakes landed in the selected period.
@@ -197,95 +194,66 @@ const TimeSeriesChart = ({
     );
   }
 
+  const data: ChartData<'bar'> = {
+    labels: points.map((point) => point.label),
+    datasets: [
+      {
+        label: 'Quakes',
+        data: points.map((point) => point.count),
+        backgroundColor: ALT_BAR_COLOR,
+        borderRadius: 4,
+        borderSkipped: false,
+        maxBarThickness: 28,
+      },
+    ],
+  };
+
+  const options: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context) => `${context.raw} quakes`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: TICK_COLOR,
+          autoSkip: true,
+          maxRotation: 0,
+          minRotation: 0,
+          font: { size: 10 },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: GRID_COLOR },
+        ticks: {
+          color: TICK_COLOR,
+          precision: 0,
+        },
+      },
+    },
+  };
+
   return (
-    <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5, minHeight: 128 }}>
-      {points.map((point) => {
-        const height = maxCount === 0 ? 0 : (point.count / maxCount) * 100;
-        return (
-          <Box key={point.label} sx={{ flex: 1, minWidth: 0 }}>
-            <Box
-              sx={{
-                height: 90,
-                display: 'flex',
-                alignItems: 'flex-end',
-              }}
-            >
-              <Box
-                sx={{
-                  position: 'relative',
-                  width: '100%',
-                  height: `${Math.max(height, point.count > 0 ? 6 : 0)}%`,
-                  bgcolor: 'secondary.main',
-                  borderRadius: '4px 4px 0 0',
-                }}
-                title={`${point.label}: ${point.count}`}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    fontSize: '0.62rem',
-                    lineHeight: 1,
-                    color: '#08131c',
-                    fontWeight: 700,
-                  }}
-                >
-                  <Box
-                    component="span"
-                    sx={{
-                      writingMode: 'vertical-rl',
-                      textOrientation: 'mixed',
-                      transform: 'rotate(180deg)',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {point.count}
-                  </Box>
-                </Typography>
-              </Box>
-            </Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                mt: 0.75,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'flex-start',
-                minHeight: 52,
-                fontSize: '0.62rem',
-                lineHeight: 1,
-              }}
-            >
-              <Box
-                component="span"
-                sx={{
-                  writingMode: 'vertical-rl',
-                  textOrientation: 'mixed',
-                  transform: 'rotate(180deg)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {point.label}
-              </Box>
-            </Typography>
-          </Box>
-        );
-      })}
+    <Box sx={{ height: 240 }}>
+      <Bar data={data} options={options} />
     </Box>
   );
 };
 
-const buildMagnitudeHistogram = (quakes: Earthquake[]): HistogramBin[] => {
+const buildMagnitudeHistogram = (quakes: Earthquake[], minMagnitude: number): HistogramBin[] => {
   const ranges = Array.from({ length: 10 }, (_, index) => ({
     label: `${index}-${index + 1}`,
     min: index,
     max: index + 1,
-  }));
+  })).filter((range) => range.max > minMagnitude);
 
   const counts = ranges.map((range) =>
     quakes.filter((quake) => {
@@ -331,25 +299,22 @@ const buildAdaptiveTimeSeries = (
   quakes: Earthquake[],
   startDate: Date | null,
   endDate: Date | null,
-): TimeSeries => {
+): SeriesPoint[] => {
   if (!startDate || !endDate || !isValid(startDate) || !isValid(endDate)) {
-    return { label: 'time', points: [] };
+    return [];
   }
 
   const from = startOfDay(startDate);
   const to = endOfDay(endDate);
 
   if (from > to) {
-    return { label: 'time', points: [] };
+    return [];
   }
 
   const daySpan = differenceInCalendarDays(to, from) + 1;
   const bucketCount = Math.min(20, Math.max(1, daySpan));
 
-  return {
-    label: 'time',
-    points: buildTimeBuckets(quakes, from, to, bucketCount),
-  };
+  return buildTimeBuckets(quakes, from, to, bucketCount);
 };
 
 const buildTimeBuckets = (
@@ -387,16 +352,12 @@ const formatBucketLabel = (bucketStart: Date, bucketEnd: Date, bucketCount: numb
   const sameDay = startOfDay(bucketStart).getTime() === startOfDay(bucketEnd).getTime();
 
   if (sameDay) {
-    return format(bucketStart, 'MMM d');
+    return format(bucketStart, 'yy/MM/dd');
   }
 
   if (bucketCount <= 7) {
-    return `${format(bucketStart, 'MMM d')}-${format(bucketEnd, 'MMM d')}`;
+    return `${format(bucketStart, 'yy/MM/dd')}-${format(bucketEnd, 'yy/MM/dd')}`;
   }
 
-  if (bucketStart.getFullYear() !== bucketEnd.getFullYear()) {
-    return `${format(bucketStart, 'yy')}-${format(bucketEnd, 'yy')}`;
-  }
-
-  return `${format(bucketStart, 'MMM d')}-${format(bucketEnd, 'MMM d')}`;
+  return `${format(bucketStart, 'yy/MM/dd')}`;
 };

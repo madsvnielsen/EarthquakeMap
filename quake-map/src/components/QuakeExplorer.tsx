@@ -179,6 +179,7 @@ const QuakeExplorer = () => {
           <EarthquakeSidebar
             quakes={paginatedQuakes}
             allQuakes={quakes}
+            activeMinMagnitude={appliedFilters.minMagnitude}
             onSelectQuake={setSelectedCoords}
             currentPage={currentPage}
             totalPages={totalPages}

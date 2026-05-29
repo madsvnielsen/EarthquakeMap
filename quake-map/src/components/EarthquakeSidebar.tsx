@@ -39,6 +39,7 @@ type ActivePanel = 'filters' | 'list' | 'insights' | null;
 type Props = {
   quakes: Earthquake[];
   allQuakes: Earthquake[];
+  activeMinMagnitude: number;
   onSelectQuake: (coords: [number, number]) => void;
   currentPage: number;
   totalPages: number;
@@ -69,6 +70,7 @@ type Props = {
 const EarthquakeSidebar = ({
   quakes,
   allQuakes,
+  activeMinMagnitude,
   onSelectQuake,
   currentPage,
   totalPages,
@@ -121,7 +123,7 @@ const EarthquakeSidebar = ({
           left: { xs: 12, md: 'auto' },
           right: { xs: 12, md: 20 },
           top: { xs: 'auto', md: 112 },
-          bottom: { xs: 12, md: 20 },
+          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 20px)', md: 20 },
           zIndex: 650,
           display: 'flex',
           alignItems: { xs: 'stretch', md: 'flex-start' },
@@ -138,6 +140,7 @@ const EarthquakeSidebar = ({
             justifyContent: { xs: 'flex-end', md: 'flex-start' },
             alignSelf: { xs: 'flex-end', md: 'auto' },
             flexShrink: 0,
+            pb: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 4px)', md: 0 },
           }}
         >
           <Tooltip title="Filters" placement="left" arrow>
@@ -416,7 +419,12 @@ const EarthquakeSidebar = ({
             </Box>
           ) : activePanel === 'insights' ? (
             <Box sx={{ px: 1.75, py: 1.5, overflowY: 'auto' }}>
-              <EarthquakeInsights quakes={allQuakes} startDate={startDate} endDate={endDate} />
+              <EarthquakeInsights
+                quakes={allQuakes}
+                startDate={startDate}
+                endDate={endDate}
+                minMagnitude={activeMinMagnitude}
+              />
             </Box>
           ) : (
             <>
